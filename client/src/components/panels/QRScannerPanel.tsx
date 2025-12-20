@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Camera, QrCode, X, Copy, ExternalLink, AlertCircle, RefreshCw, MapPin, Download, BarChart3, Filter, FileSpreadsheet, Edit3, Save, CheckCircle, Package } from 'lucide-react';
-import QrScanner from 'qr-scanner';
+import { Camera, Barcode, X, Copy, ExternalLink, AlertCircle, RefreshCw, MapPin, Download, BarChart3, Filter, FileSpreadsheet, Edit3, Save, CheckCircle, Package } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
 import * as XLSX from 'xlsx';
 import { getAssetByCode } from '../../api/assets';
 import { createScan } from '../../api/scans';
@@ -31,7 +31,7 @@ interface LocationStats {
 }
 
 interface EditScanData {
-  qrData: string;
+  barcodeData: string;
   location: string;
   deviceType: string;
   deviceModel: string;
@@ -42,8 +42,8 @@ interface EditScanData {
 
 const QRScannerPanel: React.FC = () => {
   const { hasPermission , user } = useAuth();
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const qrScannerRef = useRef<QrScanner | null>(null);
+  const scannerRef = useRef<HTMLDivElement>(null);
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [scanResults, setScanResults] = useState<ScanResult[]>([]);
   const [error, setError] = useState<string>('');
@@ -57,7 +57,7 @@ const QRScannerPanel: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingScan, setEditingScan] = useState<ScanResult | null>(null);
   const [editScanData, setEditScanData] = useState<EditScanData>({
-    qrData: '',
+    barcodeData: '',
     location: '',
     deviceType: '',
     deviceModel: '',
@@ -69,17 +69,6 @@ const QRScannerPanel: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
-    // Configure worker path for qr-scanner
-    try {
-      // Try to set worker path using the library's default location
-      if (typeof QrScanner.WORKER_PATH === 'undefined' || !QrScanner.WORKER_PATH) {
-        // Use the worker from node_modules
-        QrScanner.WORKER_PATH = '/node_modules/qr-scanner/qr-scanner-worker.min.js';
-      }
-    } catch (err) {
-      console.warn('Could not set worker path:', err);
-    }
-
     checkCameraSupport();
     loadSavedData();
     
@@ -89,8 +78,8 @@ const QRScannerPanel: React.FC = () => {
   }, []);
 
   const loadSavedData = () => {
-    const savedResults = localStorage.getItem('qr-scan-results');
-    const savedLocationsList = localStorage.getItem('qr-locations');
+    const savedResults = localStorage.getItem('barcode-scan-results');
+    const savedLocationsList = localStorage.getItem('barcode-locations');
 
     if (savedResults) {
       try {
@@ -115,15 +104,17 @@ const QRScannerPanel: React.FC = () => {
 
   const saveData = async (results: ScanResult[]) => {
     setScanResults(results);
-    localStorage.setItem('qr-scan-results', JSON.stringify(results));
+    localStorage.setItem('barcode-scan-results', JSON.stringify(results));
   };
 
   const checkCameraSupport = async () => {
     try {
       setError('');
-      const hasCamera = await QrScanner.hasCamera();
-      setHasCamera(hasCamera);
-      if (!hasCamera) {
+      // Check if camera is available using MediaDevices API
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const hasVideoInput = devices.some(device => device.kind === 'videoinput');
+      setHasCamera(hasVideoInput);
+      if (!hasVideoInput) {
         setError('No camera found on this device. Please connect a camera and refresh.');
       }
     } catch (err: any) {
@@ -137,9 +128,9 @@ const QRScannerPanel: React.FC = () => {
     }
   };
 
-  const parseDeviceInfo = (qrData: string): DeviceInfo | undefined => {
+  const parseDeviceInfo = (barcodeData: string): DeviceInfo | undefined => {
     try {
-      const parsed = JSON.parse(qrData);
+      const parsed = JSON.parse(barcodeData);
       if (parsed.type || parsed.model || parsed.serial) {
         return {
           type: parsed.type || 'Unknown Device',
@@ -158,7 +149,7 @@ const QRScannerPanel: React.FC = () => {
       const deviceInfo: Partial<DeviceInfo> = {};
 
       Object.entries(patterns).forEach(([key, pattern]) => {
-        const match = qrData.match(pattern);
+        const match = barcodeData.match(pattern);
         if (match) {
           (deviceInfo as any)[key] = match[1].trim();
         }
@@ -174,10 +165,10 @@ const QRScannerPanel: React.FC = () => {
       }
     }
 
-    if (/^[A-Z0-9-]{6,}$/i.test(qrData) || qrData.includes('device') || qrData.includes('equipment')) {
+    if (/^[A-Z0-9-]{6,}$/i.test(barcodeData) || barcodeData.includes('device') || barcodeData.includes('equipment')) {
       return {
         type: 'Device',
-        serial: qrData,
+        serial: barcodeData,
         status: 'Active'
       };
     }
@@ -188,7 +179,7 @@ const QRScannerPanel: React.FC = () => {
   const openEditModal = (scanResult: ScanResult) => {
     setEditingScan(scanResult);
     setEditScanData({
-      qrData: scanResult.data,
+      barcodeData: scanResult.data,
       location: scanResult.location,
       deviceType: scanResult.deviceInfo?.type || '',
       deviceModel: scanResult.deviceInfo?.model || '',
@@ -205,21 +196,22 @@ const QRScannerPanel: React.FC = () => {
     setSaveSuccess(false);
   };
 
-  const handleScanComplete = async (result: { data: any }) => {
+  const handleScanComplete = async (decodedText: string) => {
     stopScanning();
 
     let assetCode = '';
     let assetInfo: Asset | null = null;
 
     try {
-      const qrData = typeof result.data === 'string' ? result.data : JSON.stringify(result.data);
+      const barcodeData = decodedText;
 
       try {
-        const parsed = JSON.parse(qrData);
+        const parsed = JSON.parse(barcodeData);
         assetCode = parsed.assetCode || parsed.asset_code || '';
       } catch {
-        const match = qrData.match(/[A-Z0-9]{4,}/i);
-        assetCode = match ? match[0] : qrData;
+        // For barcodes, the data is typically just the asset code
+        const match = barcodeData.match(/[A-Z0-9]{3,}/i);
+        assetCode = match ? match[0] : barcodeData;
       }
 
       if (assetCode) {
@@ -229,12 +221,12 @@ const QRScannerPanel: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Error processing QR code:', error);
+      console.error('Error processing barcode:', error);
     }
 
-    const deviceInfo = parseDeviceInfo(result.data);
+    const deviceInfo = parseDeviceInfo(decodedText);
     const newResult: ScanResult = {
-      data: result.data,
+      data: decodedText,
       timestamp: new Date(),
       id: Date.now().toString(),
       location: currentLocation,
@@ -246,8 +238,8 @@ const QRScannerPanel: React.FC = () => {
   };
 
   const startScanning = async () => {
-    if (!videoRef.current) {
-      setError('Video element not available');
+    if (!scannerRef.current) {
+      setError('Scanner element not available');
       return;
     }
 
@@ -266,50 +258,46 @@ const QRScannerPanel: React.FC = () => {
       setIsScanning(true);
 
       // Stop any existing scanner instance
-      if (qrScannerRef.current) {
+      if (html5QrCodeRef.current) {
         try {
-          qrScannerRef.current.stop();
-          qrScannerRef.current.destroy();
+          await html5QrCodeRef.current.stop();
+          await html5QrCodeRef.current.clear();
         } catch (e) {
           console.warn('Error cleaning up previous scanner:', e);
         }
-        qrScannerRef.current = null;
-      }
-
-      // Ensure worker path is set (try multiple approaches for compatibility)
-      if (!QrScanner.WORKER_PATH || QrScanner.WORKER_PATH.includes('undefined')) {
-        // Try different worker path options
-        const workerPaths = [
-          '/node_modules/qr-scanner/qr-scanner-worker.min.js',
-          new URL('qr-scanner/qr-scanner-worker.min.js', import.meta.url).toString(),
-          'https://unpkg.com/qr-scanner@1.4.2/qr-scanner-worker.min.js'
-        ];
-        
-        for (const path of workerPaths) {
-          try {
-            QrScanner.WORKER_PATH = path;
-            break;
-          } catch (e) {
-            console.warn('Worker path attempt failed:', path);
-          }
-        }
+        html5QrCodeRef.current = null;
       }
 
       // Create new scanner instance
-      qrScannerRef.current = new QrScanner(
-        videoRef.current,
-        handleScanComplete,
-        {
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          returnDetailedScanResult: true,
-          preferredCamera: 'environment', // Prefer back camera on mobile
-        }
-      );
+      const html5QrCode = new Html5Qrcode('barcode-scanner');
+      html5QrCodeRef.current = html5QrCode;
 
-      await qrScannerRef.current.start();
+      // Get available cameras
+      const devices = await Html5Qrcode.getCameras();
+      if (devices.length === 0) {
+        throw new Error('No cameras found');
+      }
+
+      // Prefer back camera on mobile, otherwise use first available
+      const cameraId = devices.find(d => d.label.toLowerCase().includes('back'))?.id || devices[0].id;
+
+      await html5QrCode.start(
+  cameraId,
+  {
+    fps: 10,
+    qrbox: { width: 250, height: 250 },
+    aspectRatio: 1.0
+  },
+  (decodedText) => {
+    handleScanComplete(decodedText);
+  },
+  (_errorMessage) => {
+    // Ignore scanning errors
+  }
+);
+
     } catch (err: any) {
-      console.error('QR Scanner error:', err);
+      console.error('Barcode Scanner error:', err);
       let errorMessage = 'Failed to start camera. ';
       
       if (err?.message) {
@@ -328,22 +316,27 @@ const QRScannerPanel: React.FC = () => {
       setIsScanning(false);
       
       // Clean up on error
-      if (qrScannerRef.current) {
+      if (html5QrCodeRef.current) {
         try {
-          qrScannerRef.current.destroy();
+          await html5QrCodeRef.current.stop();
+          await html5QrCodeRef.current.clear();
         } catch (e) {
           // Ignore cleanup errors
         }
-        qrScannerRef.current = null;
+        html5QrCodeRef.current = null;
       }
     }
   };
 
-  const stopScanning = () => {
-    if (qrScannerRef.current) {
-      qrScannerRef.current.stop();
-      qrScannerRef.current.destroy();
-      qrScannerRef.current = null;
+  const stopScanning = async () => {
+    if (html5QrCodeRef.current) {
+      try {
+        await html5QrCodeRef.current.stop();
+        await html5QrCodeRef.current.clear();
+      } catch (e) {
+        console.warn('Error stopping scanner:', e);
+      }
+      html5QrCodeRef.current = null;
     }
     setIsScanning(false);
   };
@@ -357,7 +350,7 @@ const QRScannerPanel: React.FC = () => {
     try {
       const updatedScan: ScanResult = {
         ...editingScan,
-        data: editScanData.qrData,
+        data: editScanData.barcodeData,
         location: editScanData.location,
         deviceInfo: editScanData.deviceType ? {
           type: editScanData.deviceType,
@@ -407,7 +400,7 @@ const QRScannerPanel: React.FC = () => {
     if (location.trim() && !savedLocations.includes(location.trim())) {
       const updatedLocations = [...savedLocations, location.trim()];
       setSavedLocations(updatedLocations);
-      localStorage.setItem('qr-locations', JSON.stringify(updatedLocations));
+      localStorage.setItem('barcode-locations', JSON.stringify(updatedLocations));
     }
     setCurrentLocation(location.trim());
   };
@@ -439,7 +432,7 @@ const QRScannerPanel: React.FC = () => {
 
   const clearResults = () => {
     setScanResults([]);
-    localStorage.removeItem('qr-scan-results');
+    localStorage.removeItem('barcode-scan-results');
   };
 
   const formatTimestamp = (date: Date) => {
@@ -487,7 +480,7 @@ const QRScannerPanel: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `qr-scan-report-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `barcode-scan-report-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -496,7 +489,7 @@ const QRScannerPanel: React.FC = () => {
     const wb = XLSX.utils.book_new();
 
     const summaryData = [
-      ['QR Scanner Report Summary'],
+      ['Barcode Scanner Report Summary'],
       ['Generated At', new Date().toLocaleString()],
       ['Total Scans', scanResults.length],
       ['Total Locations', getLocationStats().length],
@@ -526,7 +519,7 @@ const QRScannerPanel: React.FC = () => {
     XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
 
     const detailedData = [
-      ['Timestamp', 'Location', 'QR Code Data', 'Device Type', 'Device Model', 'Device Serial', 'Device Status', 'Is URL']
+      ['Timestamp', 'Location', 'Barcode Data', 'Device Type', 'Device Model', 'Device Serial', 'Device Status', 'Is URL']
     ];
 
     scanResults.forEach(result => {
@@ -559,7 +552,7 @@ const QRScannerPanel: React.FC = () => {
     const deviceScans = scanResults.filter(r => r.deviceInfo);
     if (deviceScans.length > 0) {
       const deviceData = [
-        ['Device Type', 'Model', 'Serial Number', 'Status', 'Location', 'Last Scanned', 'QR Code Data']
+        ['Device Type', 'Model', 'Serial Number', 'Status', 'Location', 'Last Scanned', 'Barcode Data']
       ];
 
       deviceScans.forEach(result => {
@@ -615,7 +608,7 @@ const QRScannerPanel: React.FC = () => {
 
     XLSX.utils.book_append_sheet(wb, locationWs, 'Location Breakdown');
 
-    const filename = `QR_Scanner_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const filename = `Barcode_Scanner_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, filename);
   };
 
@@ -629,11 +622,11 @@ const QRScannerPanel: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-50 rounded-lg shrink-0">
-            <QrCode className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+            <Barcode className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-800">QR Code Scanner</h2>
-            <p className="text-xs sm:text-sm text-slate-600">Scan QR codes and track devices</p>
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-800">Barcode Scanner</h2>
+            <p className="text-xs sm:text-sm text-slate-600">Scan barcodes and track devices</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -682,7 +675,7 @@ const QRScannerPanel: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                   <div className="p-2 bg-blue-50 rounded-lg shrink-0">
-                    <QrCode className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                    <Barcode className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-base sm:text-lg font-semibold text-slate-800 truncate">
@@ -738,13 +731,13 @@ const QRScannerPanel: React.FC = () => {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">QR Code Data</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Barcode Data</label>
                 <textarea
-                  value={editScanData.qrData}
-                  onChange={(e) => setEditScanData(prev => ({ ...prev, qrData: e.target.value }))}
+                  value={editScanData.barcodeData}
+                  onChange={(e) => setEditScanData(prev => ({ ...prev, barcodeData: e.target.value }))}
                   className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={3}
-                  placeholder="Raw QR code data..."
+                  placeholder="Raw barcode data..."
                 />
               </div>
 
@@ -842,7 +835,7 @@ const QRScannerPanel: React.FC = () => {
                 </button>
                 <button
                   onClick={saveScanData}
-                  disabled={isSaving || !editScanData.qrData.trim() || !editScanData.location.trim()}
+                  disabled={isSaving || !editScanData.barcodeData.trim() || !editScanData.location.trim()}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
                 >
                   {isSaving ? (
@@ -962,12 +955,7 @@ const QRScannerPanel: React.FC = () => {
 
             <div className="p-4">
               <div className="relative bg-slate-900 rounded-lg overflow-hidden mb-4" style={{ aspectRatio: '4/3' }}>
-                <video
-                  ref={videoRef}
-                  className="w-full h-full object-cover"
-                  playsInline
-                  muted
-                />
+                <div id="barcode-scanner" ref={scannerRef} className="w-full h-full" />
                 {!isScanning && (
                   <div className="absolute inset-0 flex items-center justify-center bg-slate-800/50">
                     <div className="text-center text-white px-4">
@@ -1064,8 +1052,8 @@ const QRScannerPanel: React.FC = () => {
             <div className="p-4">
               {filteredResults.length === 0 ? (
                 <div className="text-center py-8 text-slate-500">
-                  <QrCode className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-30" />
-                  <p className="text-xs sm:text-sm">No QR codes scanned yet</p>
+                  <Barcode className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-xs sm:text-sm">No barcodes scanned yet</p>
                   <p className="text-xs mt-1">Start scanning to see results</p>
                 </div>
               ) : (

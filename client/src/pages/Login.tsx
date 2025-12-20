@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import InputField from '../components/InputField';
 import Button from '../components/Button';
 import Logo from '../components/Logo';
-// import ForgotPassword from '../components/ForgotPassword';
+import ForgotPassword from '../components/ForgotPassword';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -56,9 +56,9 @@ const Login = () => {
     return (
       <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-slate-200 to-transparent z-0" />
-        {/* <div className="relative z-10">
+        <div className="relative z-10">
           <ForgotPassword onBack={() => setShowForgotPassword(false)} />
-        </div> */}
+        </div>
       </div>
     );
   }

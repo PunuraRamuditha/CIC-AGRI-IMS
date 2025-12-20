@@ -92,7 +92,7 @@ export const getAccessibleMenuItems = (userRole: UserRole) => {
     { id: 'users', label: 'Users', icon: 'Users' },
     { id: 'suppliers', label: 'Suppliers', icon: 'Truck' },
     { id: 'insurance', label: 'Insurance', icon: 'Shield' },
-    { id: 'qr-scanner', label: 'QR Scanner', icon: 'QrCode' },
+    { id: 'qr-scanner', label: 'Barcode Scanner', icon: 'Barcode' },
   ];
 
   return allMenuItems.filter(item => canAccessPanel(userRole, item.id));

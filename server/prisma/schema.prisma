@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Asset {
+  id              Int      @id @default(autoincrement())
+  assetCode       String   @db.NVarChar(100) @unique
+  name            String   @db.NVarChar(100)
+  category        String   @db.NVarChar(100)
+  status          String   @db.NVarChar(50)
+  assignedTo      Int?
+  location        String   @db.NVarChar(100)
+  company         String   @db.NVarChar(100)
+  purchaseDate    DateTime @db.Date
+  purchasePrice   Decimal  @db.Decimal(18, 2)
+  model           String?   @db.NVarChar(100)
+  serialNumber    String?   @db.NVarChar(100)
+  description     String?  @db.NVarChar(500)
+  supplier        String?   @db.NVarChar(100)
+  invoiceNumber   String?   @db.NVarChar(100)
+  warranty        Int?      // in months
+  warrantyExpiry  DateTime? @db.Date
+  lastMaintenance DateTime? @db.Date
+  specifications  String?   @db.NVarChar(500)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  scanQRs         ScanQR[]
+}
+
+model Supplier {
+  id               Int       @id @default(autoincrement())
+  name             String    @db.NVarChar(100)
+  category         String
+  status           String    @db.NVarChar(50)
+  contactPerson    String?   @db.NVarChar(100)
+  phone            String?   @db.NVarChar(20)
+  email            String?   @db.NVarChar(100)
+  address          String?   @db.NVarChar(200)
+  website          String?   @db.NVarChar(100)
+  registrationDate DateTime? @db.Date
+  lastOrderDate    DateTime? @db.Date
+  totalOrders      Int?      
+  rating           Int?      
+  notes            String?   @db.NVarChar(500)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.NVarChar(100)
+  email       String    @db.NVarChar(100) @unique
+  username    String    @db.NVarChar(100) @unique
+  password    String    @db.NVarChar(100)
+  role        String    @db.NVarChar(50)
+  department  String    @db.NVarChar(100)
+  status      String    @db.NVarChar(50)
+  phone       String?   @db.NVarChar(20)
+  joinDate    DateTime? @db.Date
+  lastLogin   DateTime? @db.Date
+  permissions String?   @db.NVarChar(500) // store as JSON string or comma-separated
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  scanQRs     ScanQR[]
+}
+
+model ScanQR {
+  id           Int      @id @default(autoincrement())
+  assetId      Int
+  scanDate     DateTime @default(now())
+  scanLocation String   @db.NVarChar(100)
+  userId       Int
+
+  asset Asset @relation(fields: [assetId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+}
+
+

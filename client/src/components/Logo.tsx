@@ -20,7 +20,7 @@ const Logo: React.FC<LogoProps> = ({ className = '' }) => {
   return (
     <div className={`relative ${className}`}>
       <img 
-        src="\src\assets\logo2.png" 
+        src="/logo2.png" 
         alt="InventoryPro Logo" 
         className="w-full h-full object-contain rounded-lg"
         onError={() => setImageError(true)}

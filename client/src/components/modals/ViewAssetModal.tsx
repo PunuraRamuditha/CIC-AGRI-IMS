@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Package, MapPin, IndianRupee, User, Shield, Wrench, Cpu, QrCode } from 'lucide-react';
+import { X, Package, MapPin, IndianRupee, User, Shield, Wrench, Cpu, Barcode } from 'lucide-react';
 import Button from '../Button';
 import QRCodeDisplay from '../QRCodeDisplay';
 import { getUsers } from '../../api/users';
@@ -342,24 +342,24 @@ const ViewAssetModal: React.FC<ViewAssetModalProps> = ({ isOpen, onClose, asset,
                   </div>
                 </div>
 
-                {/* QR Code Section - Mobile Only */}
+                {/* Barcode Section - Mobile Only */}
                 <div className="lg:hidden">
                   <h3 className="text-base sm:text-lg font-medium text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
-                    <QrCode size={18} className="text-slate-600" />
-                    Asset QR Code
+                    <Barcode size={18} className="text-slate-600" />
+                    Asset Barcode
                   </h3>
 
                   <div className="bg-slate-50 rounded-lg p-4 flex flex-col items-center">
                     <QRCodeDisplay
                       data={getQRCodeData()}
                       size={180}
-                      label={`${asset.name} QR Code`}
+                      label={`${asset.name} Barcode`}
                       downloadable={true}
                       className="mb-4"
                     />
 
                     <div className="w-full p-3 bg-white rounded-lg border text-xs">
-                      <p className="font-medium text-slate-700 mb-2">QR Code Information:</p>
+                      <p className="font-medium text-slate-700 mb-2">Barcode Information:</p>
                       <div className="space-y-1 text-slate-600">
                         <div className="flex justify-between">
                           <span>Asset Code:</span>
@@ -389,24 +389,24 @@ const ViewAssetModal: React.FC<ViewAssetModalProps> = ({ isOpen, onClose, asset,
               </div>
             </div>
 
-            {/* QR Code Section - Desktop Only */}
+            {/* Barcode Section - Desktop Only */}
             <div className="hidden lg:block lg:w-80 border-l border-slate-200 bg-slate-50 p-6 shrink-0">
               <div className="sticky top-0">
                 <h3 className="text-lg font-medium text-slate-800 mb-4 flex items-center gap-2">
-                  <QrCode size={20} className="text-slate-600" />
-                  Asset QR Code
+                  <Barcode size={20} className="text-slate-600" />
+                  Asset Barcode
                 </h3>
 
                 <QRCodeDisplay
                   data={getQRCodeData()}
                   size={220}
-                  label={`${asset.name} QR Code`}
+                  label={`${asset.name} Barcode`}
                   downloadable={true}
                   className="mb-4"
                 />
 
                 <div className="p-4 bg-white rounded-lg border text-xs">
-                  <p className="font-medium text-slate-700 mb-2">QR Code Information:</p>
+                  <p className="font-medium text-slate-700 mb-2">Barcode Information:</p>
                   <div className="space-y-1 text-slate-600">
                     <div className="flex justify-between">
                       <span>Asset Code:</span>

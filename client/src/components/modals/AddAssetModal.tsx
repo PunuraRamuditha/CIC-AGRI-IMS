@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Package, MapPin, Cpu, DollarSign, Shield, Wrench, QrCode } from 'lucide-react';
+import { X, Package, MapPin, Cpu, DollarSign, Shield, Wrench, Barcode } from 'lucide-react';
 import Button from '../Button';
 import InputField from '../InputField';
 // import FormField from '../FormField';
@@ -168,7 +168,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose, onSubmit
 
   const handleGeneratePreview = () => {
     if (!formData.assetCode || !formData.category) {
-      alert('Please fill in at least Asset Code and Category to preview QR code');
+      alert('Please fill in at least Asset Code and Category to preview barcode');
       return;
     }
 
@@ -523,21 +523,21 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose, onSubmit
               </form>
             </div>
 
-            {/* QR Code Preview Section - Responsive */}
+            {/* Barcode Preview Section - Responsive */}
             <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-slate-200 bg-slate-50 p-4 sm:p-6">
               <div className="lg:sticky lg:top-0">
                 <h3 className="text-base sm:text-lg font-medium text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
-                  <QrCode size={18} className="text-slate-700" />
-                  Asset QR Code
+                  <Barcode size={18} className="text-slate-700" />
+                  Asset Barcode
                 </h3>
 
                 {!showQRPreview ? (
                   <div className="text-center">
                     <div className="w-full h-40 sm:h-48 bg-slate-200 rounded-lg flex items-center justify-center mb-3 sm:mb-4">
-                      <QrCode size={40} className="text-slate-400" />
+                      <Barcode size={40} className="text-slate-400" />
                     </div>
                     <p className="text-xs sm:text-sm text-slate-600 mb-3 sm:mb-4">
-                      Preview QR code that will be generated for this asset
+                      Preview barcode that will be generated for this asset
                     </p>
                     <Button
                       type="button"
@@ -554,11 +554,11 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose, onSubmit
                     <QRCodeDisplay
                       data={currentQRData}
                       size={180}
-                      label="Asset QR Code"
+                      label="Asset Barcode"
                       downloadable={true}
                     />
                     <div className="mt-3 sm:mt-4 p-3 bg-white rounded-lg border text-xs">
-                      <p className="font-medium text-slate-700 mb-2">QR Code Contains:</p>
+                      <p className="font-medium text-slate-700 mb-2">Barcode Contains:</p>
                       <ul className="space-y-1 text-slate-600">
                         <li>• Asset Code: {formData.assetCode}</li>
                         <li>• Company: {formData.company}</li>
