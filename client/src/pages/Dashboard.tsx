@@ -11,7 +11,7 @@ import {
   BarChart3,
   Search,
   Bell,
-  QrCode
+  Barcode
 } from 'lucide-react';
 import Logo from '../components/Logo';
 import { useAuth } from '../context/AuthContext';
@@ -82,7 +82,7 @@ const Dashboard = () => {
     { id: 'users', label: 'Users', icon: Users },
     { id: 'suppliers', label: 'Suppliers', icon: Truck },
     { id: 'insurance', label: 'Insurance', icon: Shield },
-    { id: 'qr-scanner', label: 'QR Scanner', icon: QrCode },
+    { id: 'qr-scanner', label: 'Barcode Scanner', icon: Barcode },
   ].filter(item => accessibleMenuItems.some(accessible => accessible.id === item.id));
 
   const renderPanel = () => {

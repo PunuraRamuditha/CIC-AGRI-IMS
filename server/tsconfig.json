@@ -1,0 +1,56 @@
+{
+  "compilerOptions": {
+    "allowJs": false,
+    /* Environment */
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+
+    /* Paths */
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "baseUrl": "./src",
+
+    /* Type Safety */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Imports */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+
+    /* Build */
+    "sourceMap": true,
+    "removeComments": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true,
+
+    /* Emit */
+    "declaration": true,
+    "declarationMap": true,
+
+    /* Node */
+    "types": ["node"]
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ],
+  "ts-node": {
+    "transpileOnly": true,
+    "files": true
+  }
+}

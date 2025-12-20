@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Package, Plus, Search, Edit, Trash2, Eye, QrCode, Filter, X, Download } from 'lucide-react';
+import { Package, Plus, Search, Edit, Trash2, Eye, Barcode, Filter, X, Download } from 'lucide-react';
 import Button from '../Button';
 import AddAssetModal, { type AssetFormData } from '../modals/AddAssetModal';
 import ViewAssetModal from '../modals/ViewAssetModal';
@@ -578,7 +578,7 @@ const AssetsPanel = () => {
                 </div>
                 {asset.qrCodeData && (
                   <div className="p-1 bg-indigo-50 rounded-lg">
-                    <QrCode className="text-indigo-600" size={16} />
+                    <Barcode className="text-indigo-600" size={16} />
                   </div>
                 )}
               </div>
